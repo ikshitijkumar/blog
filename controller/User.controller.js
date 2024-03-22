@@ -19,9 +19,6 @@ const signup = async (req, res) => {
         if (!user) {
             return res.status(400).json({ error: 'User creation failed' });
         }
-
-        // we can also create token here and directly login the user but we don't want to login the user directly after signup
-
         return res
             .status(200)
             .json({ message: 'User created successfully' });
@@ -37,19 +34,16 @@ const Login = async (req, res) => {
     }
 
     try {
-        // Check if user exists
         const user = await User.findOne({ email })
         if (!user) {
             return res.status(400).json({ error: 'Invalid credentials' });
         }
 
-        // decrypt password
         const isMatch = bcrypt.compareSync(password, user.password);
 
         if (!isMatch) {
             return res.status(400).json({ error: 'Invalid credentials' });
         }
-        // Create token
         const token = jwt.sign({ id: user._id, name: user.name }, process.env.JWT_SECRET, { expiresIn: '2d' });
         if (!token) {
             return res.status(400).json({ error: 'Invalid credentials' });
@@ -66,9 +60,6 @@ const Login = async (req, res) => {
 };
 
 const Logout = async (req, res) => {
-    // TODO: verify token => middleware => get user => remove token from user => send response
-
-    // remove token from cookie
     return res
         .status(200)
         .cookie('token', '')
@@ -76,16 +67,12 @@ const Logout = async (req, res) => {
 }
 
 const profile = async (req, res) => {
-    // grab user from token so require cookie-parser
     const { token } = req.cookies;
     if (!token) {
         return res.status(400).json({ error: 'Invalid credentials' });
     }
-    // decode the token and get user id
     try {
         const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-        // decodedToken.name = decodedToken.name.toUpperCase()
-        // console.log(decodedToken);
         return res
             .status(200)
             .json({ message: 'Profile fetched successfully', user: decodedToken });
