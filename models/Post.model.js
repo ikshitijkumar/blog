@@ -14,13 +14,9 @@ const PostSchema = new mongoose.Schema({
         required: true
     },
     postImg:{
-        type: String,   // storing the path of image
+        type: String,  
         required: true
     },
-    // name:{
-    //     type: String, // but now there is a problem that we cannot able to have any idea to edit
-    //     required: true
-    // },
     username:{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
