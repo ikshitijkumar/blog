@@ -14,19 +14,11 @@ const CreatePost = async (req, res) => {
         if (!postImg) {
             return res.status(400).json({ error: 'Image is required' });
         }
-        // console.log(title,summary,description,postImg);
-
-        // either upload the image to cloud or save to the server(uploads folder) and save the url to the database
-
-        // we store into cloudinary so after uploading we delete image from server
         const postImgPath = postImg.path
 
         postImg = await uploadOnCloudinary(postImgPath)
         postImg = postImg.url
 
-        // send the post into DB => but how we know which user is creating the post
-
-        // from the token we have to parse the values 
         const { token } = req.cookies;
         if (!token) {
             return res.status(400).json({ error: 'Invalid credentials' });
@@ -35,9 +27,6 @@ const CreatePost = async (req, res) => {
         if (!decodedToken) {
             return res.status(400).json({ error: 'Invalid credentials' });
         }
-
-        // console.log(decodedToken);
-
         const post = await Post.create({
             title,
             summary,
@@ -56,7 +45,6 @@ const CreatePost = async (req, res) => {
 }
 
 const getAllPost = async (req, res) => {
-    // get all the posts from the database
     const posts = await Post.aggregate([
         {
             $lookup: {
@@ -68,8 +56,8 @@ const getAllPost = async (req, res) => {
         },
         {
             $project: {
-                'username.password': 0, // exclude 'password' field
-                'username.email': 0, // exclude 'email' field
+                'username.password': 0, 
+                'username.email': 0, 
             }
         },
         {
@@ -79,11 +67,6 @@ const getAllPost = async (req, res) => {
             $limit: 20
         }
     ]);
-
-    // if(!posts?.length){
-    //     return res.status(400).json({ error: 'No posts found' })
-    // }
-
     return res
     .status(200)
     .json(posts)
@@ -122,9 +105,7 @@ const getBlog = async (req, res) => {
 }
 
 const editPost = async (req, res) => {
-    // getting the Id
     const { id } = req.params;
-    // checking the post author is same as the user that is logged in if yes then we update the post
     const { token } = req.cookies;
     if (!token) {
         return res.status(400).json({ error: 'Invalid credentials' })
@@ -135,11 +116,9 @@ const editPost = async (req, res) => {
     if (!post) {
         return res.status(400).json({ error: 'Post not found' })
     }
-    // console.log((post.username._id).toString()===decodedToken.id);
     if((post.username._id).toString() !== decodedToken.id) {
         return res.status(400).json({ error: 'You are not authorized to edit this post' })
     }
-    // user verified now can update the post
     let postImgPath
     let oldImgPath = post.postImg
     if(req?.file) {
@@ -150,8 +129,6 @@ const editPost = async (req, res) => {
         }
     }
     const { title, summary, description } = req.body
-    
-    // update the post into db
     const updatedPost = await Post.findByIdAndUpdate(id, {
         title,
         summary,
@@ -161,7 +138,6 @@ const editPost = async (req, res) => {
     if(!updatedPost) {
         return res.status(400).json({ error: 'Post update failed' })
     }
-    // delete the old image from cloudinary
     if(postImgPath)
         await deleteFromCloudinary(oldImgPath)
     
@@ -176,7 +152,6 @@ const deletePost = async(req, res) => {
     if (!token) {
         return res.status(400).json({ error: 'Invalid credentials' })
     }
-    // check if the user is authorized to delete the post
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET)
     const post = await Post.findById(id)
     if (!post) {
@@ -185,12 +160,10 @@ const deletePost = async(req, res) => {
     if((post.username._id).toString() !== decodedToken.id) {
         return res.status(400).json({ error: 'You are not authorized to delete this post' })
     }
-    // delete the post
     const deletedPost = await Post.findByIdAndDelete(id)
     if(!deletedPost) {
         return res.status(400).json({ error: 'Post delete failed' })
     }
-    // delete the image from cloudinary
     await deleteFromCloudinary(post.postImg)
     return res
     .status(200)   
